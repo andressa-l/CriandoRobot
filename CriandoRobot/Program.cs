@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,135 +13,35 @@ using System.ComponentModel.DataAnnotations;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
 using CriandoRobot.Models;
-
-// Classe de contexto do banco de dados
-public class LogContext : DbContext
-{
-    public DbSet<Log> Logs { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlServer("Server=PC03LAB2521\\SENAI; Database=WebScrapingDb; User Id=sa; Password=senai.123");
-    }
-}
+using System.Net.Mail;
+using System.Net;
+using System.Reflection.Metadata;
+using HtmlAgilityPack;
+using CriandoRobot.Send;
+using CriandoRobot.Compare;
+using CriandoRobot.Utils;
 
 class Program
 {
-    // Lista para armazenar produtos já verificados
-    static List<Produto> produtosVerificados = new List<Produto>();
 
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
-        // Definir o intervalo de tempo para 5 minutos (300.000 milissegundos)
-        int intervalo = 6000;
-
-        // Criar um temporizador que dispara a cada 5 minutos
-        Timer timer = new Timer(VerificarNovoProduto, null, 0, intervalo);
-
-        // Manter a aplicação rodando
-        Console.WriteLine("Pressione qualquer tecla para sair...");
-        Console.ReadKey();
-    }
-
-    static async void VerificarNovoProduto(object state)
-    {
-        string username = "11164448";
-        string senha = "60-dayfreetrial";
-        string url = "http://regymatrix-001-site1.ktempurl.com/api/v1/produto/getall";
-
-        try
-        {
-            // Criar um objeto HttpClient
-            using (HttpClient client = new HttpClient())
-            {
-                // Adicionar as credenciais de autenticação básica
-                var byteArray = Encoding.ASCII.GetBytes($"{username}:{senha}");
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-
-                // Fazer a requisição GET à API
-                HttpResponseMessage response = await client.GetAsync(url);
-
-                // Verificar se a requisição foi bem-sucedida (código de status 200)
-                if (response.IsSuccessStatusCode)
-                {
-                    // Ler o conteúdo da resposta como uma string
-                    string responseData = await response.Content.ReadAsStringAsync();
-
-                    // Processar os dados da resposta
-                    List<Produto> novosProdutos = ObterNovosProdutos(responseData);
-                    foreach (Produto produto in novosProdutos)
-                    {
-                        if (!produtosVerificados.Exists(p => p.Id == produto.Id))
-                        {
-                            // Se é um novo produto, faça algo com ele
-                            Console.WriteLine($"Novo produto encontrado: ID {produto.Id}, Nome: {produto.Nome}");
-                            // Adicionar o produto à lista de produtos verificados
-                            produtosVerificados.Add(produto);
-
-                            // Registra um log no banco de dados apenas se o produto for novo
-                            if (!ProdutoJaRegistrado(produto.Id))
-                            {
-                                RegistrarLog("0088663", "andressalima", DateTime.Now, "ConsultaAPI - Verificar Produto", "Sucesso", produto.Id);
-
-                                MercadoLivreScraper mercadoLivreScraper = new MercadoLivreScraper();
-                                mercadoLivreScraper.ObterPreco(produto.Nome, produto.Id);
-
-                                MagazineLuizaScraper magazineLuizaScraper = new MagazineLuizaScraper();
-                                magazineLuizaScraper.ObterPreco(produto.Nome, produto.Id);
-
-
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Imprimir mensagem de erro caso a requisição falhe
-                    Console.WriteLine($"Erro: {response.StatusCode}");
-                }
-            }
+        Console.WriteLine("Iniciando Projeto...");
+        string contactEmail = VerificarEmail.OpcaoMsgEmail();
+        while (contactEmail == null) {
+            Console.WriteLine("Vamos digitar um email válido!");
+            contactEmail = VerificarEmail.OpcaoMsgEmail();
         }
-        catch (Exception ex)
-        {
-            // Imprimir mensagem de erro caso ocorra uma exceção
-            Console.WriteLine($"Erro ao fazer a requisição: {ex.Message}");
-        }
-    }
+        string phoneNumber = EnviarZap.OpcaoMsgZap();
+        
+        int intervalo = 300000;
 
-    // Método para processar os dados da resposta e obter produtos
-    static List<Produto> ObterNovosProdutos(string responseData)
-    {
-        // Desserializar os dados da resposta para uma lista de produtos
-        List<Produto> produtos = JsonConvert.DeserializeObject<List<Produto>>(responseData);
-        return produtos;
-    }
+        Timer timer = new Timer(state => VerificarProduto.VerificarNovoProduto(phoneNumber, contactEmail), null, 0, intervalo);
+        
+        while (true) {
+            Thread.Sleep(Timeout.Infinite);
+        };
 
-    // Método para verificar se o produto já foi registrado no banco de dados
-    static bool ProdutoJaRegistrado(int idProduto)
-    {
-        using (var context = new LogContext())
-        {
-            return context.Logs.Any(log => log.IdProd == idProduto);
-        }
-    }
-
-    // Método para registrar um log no banco de dados
-    static void RegistrarLog(string codRob, string usuRob, DateTime dateLog, string processo, string infLog, int idProd)
-    {
-        using (var context = new LogContext())
-        {
-            var log = new Log
-            {
-                CodRob = codRob,
-                UsuRob = usuRob,
-                DateLog = dateLog,
-                Processo = processo,
-                InfLog = infLog,
-                IdProd = idProd
-            };
-            context.Logs.Add(log);
-            context.SaveChanges();
-        }
     }
 
 }

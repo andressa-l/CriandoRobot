@@ -4,9 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CriandoRobot.Send
-{
-    internal class Phone
-    {
+namespace CriandoRobot.Utils {
+    internal class BuscaApi {
     }
 }
