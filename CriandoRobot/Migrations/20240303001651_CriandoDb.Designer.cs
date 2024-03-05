@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CriandoRobot.Migrations
 {
     [DbContext(typeof(LogContext))]
-    [Migration("20240228172740_CriandoDb")]
+    [Migration("20240303001651_CriandoDb")]
     partial class CriandoDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,7 +23,7 @@ namespace CriandoRobot.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
-            modelBuilder.Entity("Log", b =>
+            modelBuilder.Entity("CriandoRobot.Models.Log", b =>
                 {
                     b.Property<int>("IdLog")
                         .ValueGeneratedOnAdd()
