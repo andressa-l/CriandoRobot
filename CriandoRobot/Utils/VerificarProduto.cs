@@ -46,9 +46,9 @@ namespace CriandoRobot.Utils {
                                     var precoMercadoLivre = mercadoLivreScraper.ObterPreco(produto.Nome, produto.Id);
                                     var precoComparado = benchmarking.CompararPrecos(precoMercadoLivre.Price, precoMagazineLuiza.Price, produto.Nome, produto.Id);
 
+                                    VerificarEmail.EnviarEmail(contactEmail, produto.Nome, precoMercadoLivre.Price, produto.Nome, precoMagazineLuiza.Price, precoComparado, produto.Nome, produto.Id);
 
                                     if (phoneNumber != null && contactEmail != null) {
-                                        VerificarEmail.EnviarEmail(contactEmail, produto.Nome, precoMercadoLivre.Price, produto.Nome, precoMagazineLuiza.Price, precoComparado, produto.Nome, produto.Id);
                                         EnviarZap.EnviarMsg(produto.Id, phoneNumber, produto.Nome, precoMagazineLuiza.Price, precoMercadoLivre.Price, precoComparado);
                                     }
 
